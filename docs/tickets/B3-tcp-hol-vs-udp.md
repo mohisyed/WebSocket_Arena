@@ -1,0 +1,28 @@
+# TICKET B3 — TCP HEAD-OF-LINE BLOCKING vs UDP (READING / REFLECTION)
+
+**PHASE:** B (this is a reading + reflection ticket, not necessarily code)
+**DEPENDS ON:** B2
+
+## GOAL
+
+Understand the inherent latency tradeoff of your WebSocket-over-TCP choice.
+
+## WHAT TO UNDERSTAND
+
+- Because you're on TCP, one lost packet stalls delivery of everything after it until retransmit (head-of-line blocking) — even though for real-time state only the LATEST data matters.
+- Why action games use UDP + a custom reliability layer.
+- Your TCP options: smaller/less-frequent messages, accept the latency, or (advanced) WebTransport (QUIC) / WebRTC DataChannels for unreliable browser transport.
+
+## GOTCHA
+
+- Don't over-engineer: for a casual dot arena on decent networks, TCP/WebSocket is genuinely fine (many .io games ship on it). HOL matters at competitive twitch latencies, maybe not here.
+
+## DEFINITION OF DONE
+
+- You can explain, unprompted, why Quake/CS use UDP, what HOL blocking is, and when it would (and wouldn't) hurt your game.
+
+## RESOURCES
+
+- [Fiedler: UDP vs TCP / What Every Programmer Needs To Know About Game Networking](https://gafferongames.com/post/udp_vs_tcp/)
+  - [What Every Programmer Needs To Know About Game Networking](https://gafferongames.com/post/what_every_programmer_needs_to_know_about_game_networking/)
+- [websocket.org: WebSocket vs TCP (head-of-line section)](https://websocket.org/reference/websocket-vs-tcp/)

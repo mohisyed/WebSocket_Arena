@@ -1,0 +1,52 @@
+# TICKET 07 — APPLICATION-LEVEL GAME PROTOCOL (INSIDE THE PAYLOADS)
+
+**PHASE:** MVP
+**DEPENDS ON:** 06
+
+## GOAL
+
+Design the messages that live INSIDE WebSocket payloads. Two layers now: WebSocket framing (transport) + your game protocol (application).
+
+## WHAT TO DO — minimum message set
+
+**client -> server:**
+- `join  { name }`
+- `input { up, down, left, right }` (or a movement vector / target)
+
+**server -> client:**
+- `welcome { yourId }`
+- `state   { players: [ { id, x, y, color } ] }`
+
+- Start with JSON (trivial to produce/consume in the browser).
+- Define the schema explicitly; include a "type" field for versioning.
+- SERVER IS AUTHORITATIVE: clients send INTENT (inputs), never positions.
+
+## CONCEPTS THIS TEACHES
+
+- Protocol design layered on a transport
+- Transport framing vs application messages
+- Server authority; JSON vs binary tradeoffs
+
+## GOTCHAS
+
+- A small JSON lib (Jackson/Gson) is fine and keeps focus on networking.
+- JSON is verbose: an N-player snapshot at 30 Hz is heavy — that's the motivation for the later binary/delta ticket (B1), not now.
+- Validate/clamp inputs server-side. Never trust the client.
+- Version the format from day one.
+
+## DEFINITION OF DONE
+
+- A documented message schema.
+- Server parses join/input and emits welcome/state.
+- You can watch the JSON flow in DevTools' WS frame inspector.
+
+I WRITE THIS MYSELF. (Protocol/message design is core. AI may write a trivial JSON helper or review the schema.)
+
+## RESOURCES
+
+- [victorzhou.com: How to Build a Multiplayer (.io) Web Game](https://victorzhou.com/blog/build-an-io-game-part-1/)
+- [MDN: Writing WebSocket client applications](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API/Writing_WebSocket_client_applications)
+
+## DAY-JOB TRANSFER
+
+Picking fields, a message-type discriminator, fixed vs variable encodings, and versioning — same conversation as TLV ISO 8583 vs a verbose text format.

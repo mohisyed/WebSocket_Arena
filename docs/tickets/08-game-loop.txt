@@ -1,0 +1,47 @@
+TICKET 08 — THE GAME LOOP: FIXED TIMESTEP, AUTHORITATIVE TICK, BROADCAST
+================================================================================
+PHASE: MVP
+DEPENDS ON: 07
+
+GOAL
+  Add a single dedicated game-loop thread (separate from connection threads)
+  that simulates the world and broadcasts snapshots at a fixed rate.
+
+WHAT TO DO — each tick (start at 20 Hz = 50ms, or 30 Hz ~= 33ms)
+  1. Drain queued client inputs.
+  2. Advance world state (move each player by input * dt).
+  3. Serialize a world snapshot.
+  4. Broadcast it to all clients.
+  - Use an accumulator so the sim advances in fixed dt steps despite jitter;
+    sleep the remainder of each tick.
+
+CONCEPTS THIS TEACHES
+  - Fixed-timestep simulation; decoupling sim rate from I/O
+  - The accumulator pattern; server authority
+  - The "spiral of death" (a tick takes longer than dt -> don't catch up
+    infinitely; cap max steps per frame)
+
+GOTCHAS
+  - Thread.sleep is imprecise — measure elapsed time / compute the next deadline.
+  - Connection threads ENQUEUE inputs; the game thread DRAINS them — use a
+    thread-safe queue (e.g. ConcurrentLinkedQueue per player).
+  - Don't mutate shared world state from connection threads. Funnel ALL mutations
+    through the tick thread to keep reasoning simple.
+
+DEFINITION OF DONE
+  - With nobody moving, the server emits a steady ~20-30 snapshots/sec
+    (log tick count per second).
+  - A queued input visibly changes that player's position next snapshot.
+
+I WRITE THIS MYSELF. (The loop and state update are core.)
+
+RESOURCES
+  - Glenn Fiedler: Fix Your Timestep!
+    https://gafferongames.com/post/fix_your_timestep/
+  - The Cherno (video): Timesteps and Delta Time
+    https://www.youtube.com/watch?v=pctGOMDW-HQ
+
+DAY-JOB TRANSFER
+  A fixed-cadence loop that drains a queue, updates authoritative state, and
+  emits results is the same shape as a batch/transaction tick or a polling driver
+  loop on NonStop.

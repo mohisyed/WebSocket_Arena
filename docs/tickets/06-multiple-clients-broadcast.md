@@ -1,0 +1,44 @@
+# TICKET 06 — MULTIPLE CLIENTS + SHARED REGISTRY (THREAD-PER-CONNECTION)
+
+**PHASE:** MVP
+**DEPENDS ON:** 05
+
+## GOAL
+
+Support many simultaneous clients and broadcast a message to all of them.
+
+## WHAT TO DO
+
+- Turn the accept loop into: `accept()` -> spawn a handler thread (or virtual thread) per socket.
+- Maintain a thread-safe registry of connections (e.g. `ConcurrentHashMap<clientId, ClientConnection>`).
+- Implement `broadcast(message)`: iterate the registry, write the frame to each.
+- Test as a chat: one client's message is relayed to all.
+
+## CONCEPTS THIS TEACHES
+
+- Thread-per-connection model; concurrent collections
+- Safe iteration during concurrent add/remove
+- Per-connection write synchronization (two threads must NEVER interleave bytes on one socket's OutputStream)
+- Stable client IDs
+
+## GOTCHAS
+
+- A single OutputStream is NOT safe for concurrent writes — guard each connection's writes with a per-connection lock (the game thread will also write later).
+- Removing clients while broadcasting needs a concurrent/snapshot collection.
+- A slow client can block a broadcast thread — note it now; you'll add per-client write queues later.
+
+## DEFINITION OF DONE
+
+- Three browser tabs; a message from one appears in all three.
+- Closing one tab doesn't disrupt the others and removes it from the registry.
+
+I WRITE THIS MYSELF. (Concurrency design is part of the learning.)
+
+## RESOURCES
+
+- [Oracle: Concurrent Collections](https://docs.oracle.com/javase/tutorial/essential/concurrency/collections.html)
+- [Java 21 Virtual Threads guide](https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html)
+
+## DAY-JOB TRANSFER
+
+Managing a registry of live socket sessions + fan-out is the same shape as a switch tracking concurrent terminal/host links.
