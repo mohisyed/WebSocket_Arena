@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WebSocket Arena</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: monospace; color: #eee; }
+    canvas { border: 2px solid #444; background: #1a1a1a; }
+    #status { margin-top: 10px; font-size: 14px; }
+    #join-screen { text-align: center; }
+    #join-screen input { padding: 8px; font-size: 16px; margin-right: 8px; }
+    #join-screen button { padding: 8px 16px; font-size: 16px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="join-screen">
+    <h1>WebSocket Arena</h1>
+    <br>
+    <input id="nameInput" placeholder="Enter your name" autofocus />
+    <button id="joinBtn">Join</button>
+  </div>
+  <canvas id="arena" width="800" height="600" style="display:none;"></canvas>
+  <div id="status"></div>
+
+  <script>
+    const canvas = document.getElementById('arena');
+    const ctx = canvas.getContext('2d');
+    const status = document.getElementById('status');
+    const joinScreen = document.getElementById('join-screen');
+
+    let ws = null;
+    let myId = null;
+    let players = [];
+    let keys = { up: false, down: false, left: false, right: false };
+    let lastKeys = { up: false, down: false, left: false, right: false };
+
+    // Connect and join
+    document.getElementById('joinBtn').onclick = () => {
+      const name = document.getElementById('nameInput').value.trim() || 'Player';
+      ws = new WebSocket('ws://' + window.location.host + '/ws');
+
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ type: 'join', name }));
+        status.textContent = 'Connected. Use arrow keys or WASD to move.';
+      };
+
+      ws.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'welcome') {
+          myId = msg.yourId;
+          joinScreen.style.display = 'none';
+          canvas.style.display = 'block';
+        } else if (msg.type === 'state') {
+          players = msg.players;
+        }
+      };
+
+      ws.onclose = () => { status.textContent = 'Disconnected.'; };
+    };
+
+    // Handle enter key on name input
+    document.getElementById('nameInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('joinBtn').click();
+    });
+
+    // Keyboard input
+    const keyMap = {
+      'ArrowUp': 'up', 'ArrowDown': 'down', 'ArrowLeft': 'left', 'ArrowRight': 'right',
+      'w': 'up', 's': 'down', 'a': 'left', 'd': 'right',
+      'W': 'up', 'S': 'down', 'A': 'left', 'D': 'right'
+    };
+
+    window.addEventListener('keydown', (e) => {
+      if (keyMap[e.key]) {
+        e.preventDefault();
+        keys[keyMap[e.key]] = true;
+        sendInput();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (keyMap[e.key]) {
+        e.preventDefault();
+        keys[keyMap[e.key]] = false;
+        sendInput();
+      }
+    });
+
+    function sendInput() {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      // Only send if keys changed
+      if (keys.up !== lastKeys.up || keys.down !== lastKeys.down ||
+          keys.left !== lastKeys.left || keys.right !== lastKeys.right) {
+        ws.send(JSON.stringify({ type: 'input', up: keys.up, down: keys.down, left: keys.left, right: keys.right }));
+        lastKeys = { ...keys };
+      }
+    }
+
+    // Render loop
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (const p of players) {
+        // Draw circle
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 15, 0, Math.PI * 2);
+        ctx.fillStyle = p.color.toLowerCase();
+        ctx.fill();
+        ctx.strokeStyle = (p.id === myId) ? '#fff' : '#666';
+        ctx.lineWidth = (p.id === myId) ? 3 : 1;
+        ctx.stroke();
+
+        // Draw name
+        ctx.fillStyle = '#eee';
+        ctx.font = '12px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(p.id === myId ? 'YOU' : p.id.substring(0, 4), p.x, p.y - 22);
+      }
+
+      requestAnimationFrame(draw);
+    }
+
+    requestAnimationFrame(draw);
+  </script>
+</body>
+</html>
