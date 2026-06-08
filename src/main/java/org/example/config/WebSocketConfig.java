@@ -1,6 +1,7 @@
 package org.example.config;
 
 import org.example.websocket.ArenaWebSocketHandler;
+import org.example.service.GameLoop;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,10 +16,15 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 @Configuration
 @EnableWebSocket
 public class WebSocketConfig implements WebSocketConfigurer {
+    private final GameLoop gameLoop;
+
+    public WebSocketConfig(GameLoop gameloop){
+        this.gameLoop = gameloop;
+    }
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry){
-        registry.addHandler(new ArenaWebSocketHandler(), "/ws").setAllowedOrigins("*");
+        registry.addHandler(new ArenaWebSocketHandler(gameLoop), "/ws").setAllowedOrigins("*");
 
     }
 }
