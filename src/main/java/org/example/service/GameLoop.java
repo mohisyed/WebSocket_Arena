@@ -58,6 +58,26 @@ public class GameLoop {
             if (tempPlayer.isLeft())  tempPlayer.setX(tempPlayer.getX() - speed);
             if (tempPlayer.isRight()) tempPlayer.setX(tempPlayer.getX() + speed);
 
+            // Bounce off arena walls (800x600 canvas, 15px radius)
+            if (tempPlayer.getX() <= 15) {
+                tempPlayer.setX(15);
+                tempPlayer.setLeft(false);
+                tempPlayer.setRight(true);
+            } else if (tempPlayer.getX() >= 785) {
+                tempPlayer.setX(785);
+                tempPlayer.setRight(false);
+                tempPlayer.setLeft(true);
+            }
+            if (tempPlayer.getY() <= 15) {
+                tempPlayer.setY(15);
+                tempPlayer.setUp(false);
+                tempPlayer.setDown(true);
+            } else if (tempPlayer.getY() >= 585) {
+                tempPlayer.setY(585);
+                tempPlayer.setDown(false);
+                tempPlayer.setUp(true);
+            }
+
             PlayerSnapshot snap = new PlayerSnapshot(tempPlayer.getId(), tempPlayer.getX(), tempPlayer.getY(), tempPlayer.getColor().name());
             snapShotRegistry.add(snap);
         }

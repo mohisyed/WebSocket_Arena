@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Arena Spectator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: monospace; color: #eee; }
+    canvas { border: 2px solid #444; background: #1a1a1a; }
+    #status { margin-top: 10px; font-size: 14px; }
+    #player-count { margin-top: 5px; font-size: 14px; color: #888; }
+  </style>
+</head>
+<body>
+  <h2>Arena Spectator</h2>
+  <canvas id="arena" width="800" height="600"></canvas>
+  <div id="status">Connecting...</div>
+  <div id="player-count"></div>
+
+  <script>
+    const canvas = document.getElementById('arena');
+    const ctx = canvas.getContext('2d');
+    const status = document.getElementById('status');
+    const playerCount = document.getElementById('player-count');
+
+    let players = [];
+
+    const ws = new WebSocket('ws://' + window.location.host + '/ws');
+
+    ws.onopen = () => { status.textContent = 'Watching live.'; };
+    ws.onclose = () => { status.textContent = 'Disconnected.'; };
+
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'state') {
+        players = msg.players;
+        playerCount.textContent = players.length + ' player(s) in arena';
+      }
+    };
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (const p of players) {
+        // Draw circle
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 15, 0, Math.PI * 2);
+        ctx.fillStyle = p.color.toLowerCase();
+        ctx.fill();
+        ctx.strokeStyle = '#666';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Draw ID label
+        ctx.fillStyle = '#eee';
+        ctx.font = '12px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(p.id.substring(0, 4), p.x, p.y - 22);
+      }
+
+      requestAnimationFrame(draw);
+    }
+
+    requestAnimationFrame(draw);
+  </script>
+</body>
+</html>

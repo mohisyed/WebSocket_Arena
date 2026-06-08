@@ -16,6 +16,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.Random;
 
 
 public class ArenaWebSocketHandler extends TextWebSocketHandler {
@@ -28,6 +29,7 @@ public class ArenaWebSocketHandler extends TextWebSocketHandler {
 
     // logging solution
     private static final Logger logger = LoggerFactory.getLogger(ArenaWebSocketHandler.class);
+    private static final Random random = new Random();
 
     public ArenaWebSocketHandler(GameLoop gameLoop) {
         this.gameLoop = gameLoop;
@@ -55,7 +57,9 @@ public class ArenaWebSocketHandler extends TextWebSocketHandler {
             String playerSessionId = session.getId();
             String name = jsonNode.get("name").asText();
             PlayerColor color = PlayerColor.random();
-            gameLoop.addPlayer(playerSessionId, new Player(playerSessionId, name, 100, 100, color));
+            int startX = random.nextInt(50, 750);
+            int startY = random.nextInt(50, 550);
+            gameLoop.addPlayer(playerSessionId, new Player(playerSessionId, name, startX, startY, color));
 
             WelcomeMessage newPlayerWelcome = new WelcomeMessage("welcome", playerSessionId);
             String jsonString = objectMapper.writeValueAsString(newPlayerWelcome);
