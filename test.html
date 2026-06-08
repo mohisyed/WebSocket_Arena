@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Arena Test Client</title>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #eee; }
+    button { padding: 8px 16px; margin: 4px; cursor: pointer; font-size: 14px; }
+    input { padding: 8px; font-size: 14px; }
+    #log { background: #111; border: 1px solid #444; padding: 10px; height: 300px;
+           overflow-y: auto; margin-top: 10px; white-space: pre-wrap; }
+    .sent { color: #4fc3f7; }
+    .received { color: #81c784; }
+    .info { color: #ffb74d; }
+  </style>
+</head>
+<body>
+  <h2>Arena Test Client</h2>
+
+  <div>
+    <button id="connectBtn">Connect</button>
+    <button id="disconnectBtn" disabled>Disconnect</button>
+  </div>
+
+  <div style="margin-top: 10px;">
+    <input id="nameInput" placeholder="Player name" value="Alice" />
+    <button id="joinBtn" disabled>Join</button>
+  </div>
+
+  <div style="margin-top: 10px;">
+    <button id="upBtn" disabled>Up</button>
+    <button id="downBtn" disabled>Down</button>
+    <button id="leftBtn" disabled>Left</button>
+    <button id="rightBtn" disabled>Right</button>
+    <button id="stopBtn" disabled>Stop</button>
+  </div>
+
+  <div id="log"></div>
+
+  <script>
+    const log = document.getElementById('log');
+    let ws = null;
+
+    function addLog(text, cls) {
+      const line = document.createElement('div');
+      line.className = cls;
+      line.textContent = text;
+      log.appendChild(line);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function setConnected(connected) {
+      document.getElementById('connectBtn').disabled = connected;
+      document.getElementById('disconnectBtn').disabled = !connected;
+      document.getElementById('joinBtn').disabled = !connected;
+      document.getElementById('upBtn').disabled = !connected;
+      document.getElementById('downBtn').disabled = !connected;
+      document.getElementById('leftBtn').disabled = !connected;
+      document.getElementById('rightBtn').disabled = !connected;
+      document.getElementById('stopBtn').disabled = !connected;
+    }
+
+    function send(obj) {
+      const json = JSON.stringify(obj);
+      ws.send(json);
+      addLog('SENT: ' + json, 'sent');
+    }
+
+    document.getElementById('connectBtn').onclick = () => {
+      ws = new WebSocket('ws://localhost:8080/ws');
+      ws.onopen = () => { addLog('Connected', 'info'); setConnected(true); };
+      ws.onclose = () => { addLog('Disconnected', 'info'); setConnected(false); };
+      ws.onmessage = (e) => addLog('RECV: ' + e.data, 'received');
+    };
+
+    document.getElementById('disconnectBtn').onclick = () => ws.close();
+
+    document.getElementById('joinBtn').onclick = () => {
+      send({ type: 'join', name: document.getElementById('nameInput').value });
+    };
+
+    function sendInput(up, down, left, right) {
+      send({ type: 'input', up, down, left, right });
+    }
+
+    document.getElementById('upBtn').onclick    = () => sendInput(true, false, false, false);
+    document.getElementById('downBtn').onclick   = () => sendInput(false, true, false, false);
+    document.getElementById('leftBtn').onclick   = () => sendInput(false, false, true, false);
+    document.getElementById('rightBtn').onclick  = () => sendInput(false, false, false, true);
+    document.getElementById('stopBtn').onclick   = () => sendInput(false, false, false, false);
+  </script>
+</body>
+</html>
